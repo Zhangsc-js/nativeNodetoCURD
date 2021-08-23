@@ -1,4 +1,6 @@
 const queryString = require('querystring')
+const handleBlogRouter = require('./router/blog')
+const handleUserRouter = require('./router/user')
 
 const getPostData = (req) => {
   return new Promise((resolve, reject) => {
@@ -28,8 +30,20 @@ const serverHandle = (req, res) => {
   // 处理 post请求数据
   getPostData(req).then((postData) => {
     req.body = postData
-    // 处理路由
-
+    // 处理 blog 路由
+    const blogResult = handleBlogRouter(req, res)
+    if (blogResult) {
+      blogResult.then((blogData) => {
+        res.end(JSON.stringify(blogData))
+      })
+    }
+    // 处理user路由
+    const userRouter = handleUserRouter(req, res)
+    if (userRouter) {
+      userRouter.then((userData) => {
+        res.end(JSON.stringify(userData))
+      })
+    }
     // 不匹配返回404
     res.writeHead(404, { 'Content-type': 'text/plain' })
     res.write('404 Not Found')
