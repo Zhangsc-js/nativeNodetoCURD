@@ -6,6 +6,13 @@ const {
   updateBlog,
   delBlog,
 } = require('../controller/blog')
+
+const loginCheck = (req) => {
+  if (!req.session.username) {
+    return Promise.resolve(new ErrorModel('尚未登录'))
+  }
+}
+
 const handleBlogRouter = (req, res) => {
   // 提取id 和 methods: {
   const method = req.method
@@ -14,6 +21,16 @@ const handleBlogRouter = (req, res) => {
   if (method === 'GET' && req.path === '/api/blog/list') {
     let author = req.query.author || ''
     const keyword = req.query.keyword || ''
+    if (req.query.isadmin) {
+      // 管理员界面
+      const loginCheckResult = loginCheck(req)
+      if (loginCheckResult) {
+        //未登录
+        return loginCheckResult
+      }
+      // 强制查询自己的博客
+      author = req.session.username
+    }
     return getList(author, keyword).then((data) => {
       return new SuccessModel(data)
     })
@@ -28,7 +45,11 @@ const handleBlogRouter = (req, res) => {
 
   //新建博客
   if (method === 'POST' && req.path === '/api/blog/new') {
-    req.body.author = `zhangsan`
+    // 登录验证
+    const loginCheckResult = loginCheck(req)
+    if (loginCheckResult) return loginCheckResult
+
+    req.body.author = req.session.username
     return newBlog(req.body).then((result) => {
       return new SuccessModel(result)
     })
@@ -36,6 +57,10 @@ const handleBlogRouter = (req, res) => {
 
   //更新博客
   if (method === 'POST' && req.path === '/api/blog/update') {
+    // 登录验证
+    const loginCheckResult = loginCheck(req)
+    if (loginCheckResult) return loginCheckResult
+
     const blogData = req.body
     return updateBlog(id, blogData).then((result) => {
       if (result) {
@@ -48,7 +73,11 @@ const handleBlogRouter = (req, res) => {
 
   //删除博客
   if (method === 'POST' && req.path === '/api/blog/del') {
-    return delBlog(id, 'zhangsan').then((result) => {
+    // 登录验证
+    const loginCheckResult = loginCheck(req)
+    if (loginCheckResult) return loginCheckResult
+
+    return delBlog(id, req.session.username).then((result) => {
       if (result) {
         return new SuccessModel(result)
       } else {

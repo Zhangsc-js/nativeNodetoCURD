@@ -3,6 +3,13 @@ const handleBlogRouter = require('./src/router/blog')
 const handleUserRouter = require('./src/router/user')
 const { get, set } = require('./src/db/redis')
 
+// 获取cookie的过期时间
+const getCookieExpires = () => {
+  const d = new Date()
+  d.setTime(d.getTime() + 24 * 60 * 60 * 1000)
+  return d.toGMTString()
+}
+
 const getPostData = (req) => {
   return new Promise((resolve, reject) => {
     if (req.method !== 'POST') return resolve({})
@@ -73,6 +80,12 @@ const serverHandle = (req, res) => {
       // 处理 blog 路由
       const blogResult = handleBlogRouter(req, res)
       if (blogResult) {
+        if (needSetCookie) {
+          res.setHeader(
+            'Set-Cookie',
+            `userid = ${userId};path=/;httpOnly;expires = ${getCookieExpires()}`
+          )
+        }
         blogResult.then((blogData) => {
           res.end(JSON.stringify(blogData))
         })
@@ -81,6 +94,12 @@ const serverHandle = (req, res) => {
       // 处理user路由
       const userRouter = handleUserRouter(req, res)
       if (userRouter) {
+        if (needSetCookie) {
+          res.setHeader(
+            'Set-Cookie',
+            `userid = ${userId};path=/;httpOnly;expires = ${getCookieExpires()}`
+          )
+        }
         userRouter.then((userData) => {
           res.end(JSON.stringify(userData))
         })
